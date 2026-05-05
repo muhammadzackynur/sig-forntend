@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:google_sign_in/google_sign_in.dart'; // Tambahkan import Google Sign In
+import 'package:google_sign_in/google_sign_in.dart';
 import 'home_screen.dart';
 import 'app_colors.dart';
 import 'custom_widgets.dart';
@@ -18,7 +18,6 @@ class _AuthScreenState extends State<AuthScreen> {
   late bool isLogin;
   bool _isLoading = false;
 
-  // Controller untuk menangkap input dari text field
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -31,8 +30,8 @@ class _AuthScreenState extends State<AuthScreen> {
     serverClientId:
         '229118112939-419kmv6oeek5hicmrcpjvr135nh33tu6.apps.googleusercontent.com',
   );
-  // URL API Backend Laravel
-  final String _baseUrl = 'http://192.168.1.236:8000/api';
+
+  final String _baseUrl = 'http://192.168.1.40:8000/api';
 
   @override
   void initState() {
@@ -42,7 +41,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
-    // Bersihkan memory saat screen ditutup
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -51,16 +49,13 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  // Fungsi untuk menampilkan pesan (Snackbar)
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  // Fungsi utama untuk integrasi ke backend (Email & Password)
   Future<void> _submitAuth() async {
-    // Validasi dasar
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       _showSnackBar('Email dan Password harus diisi!');
       return;
@@ -77,14 +72,11 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     final url = Uri.parse(isLogin ? '$_baseUrl/login' : '$_baseUrl/register');
 
     try {
-      // Data yang akan dikirim ke Laravel
       final Map<String, String> requestBody = {
         'email': _emailController.text,
         'password': _passwordController.text,
@@ -92,7 +84,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!isLogin) {
         requestBody['name'] = _nameController.text;
-        // Jika backend membutuhkan phone_number, kirimkan
         requestBody['phone_number'] = _phoneController.text;
       }
 
@@ -106,11 +97,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSnackBar(isLogin ? 'Login Berhasil!' : 'Pendaftaran Berhasil!');
-        print('Data Response: $responseData');
-
-        // TODO: Simpan Token (misalnya menggunakan shared_preferences)
-
-        // Navigasi ke halaman utama aplikasi (Home Screen)
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -125,44 +111,29 @@ class _AuthScreenState extends State<AuthScreen> {
       _showSnackBar('Terjadi kesalahan koneksi jaringan.');
       print('Network Error: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  // Fungsi integrasi Google Sign-In
   Future<void> _handleGoogleSignIn() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // 1. Tampilkan pop-up Google Sign In
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        // User membatalkan proses login Google
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         return;
       }
 
-      // 2. Dapatkan token otentikasi
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 
-      // Opsional: Jika ingin mengirim nomor telepon saat Sign Up via Google,
-      // kamu bisa mengambilnya dari _phoneController.text jika field tidak disembunyikan.
       final Map<String, String> requestBody = {'id_token': idToken ?? ''};
-
-      // Jika butuh input nomor hp manual dari field saat google signup
       if (!isLogin && _phoneController.text.isNotEmpty) {
         requestBody['phone_number'] = _phoneController.text;
       }
 
-      // 3. Kirim id_token ke backend Laravel
       final url = Uri.parse('$_baseUrl/auth/google');
       final response = await http.post(
         url,
@@ -174,11 +145,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (response.statusCode == 200) {
         _showSnackBar('Login Google Berhasil!');
-        print('Data Response: $responseData');
-
-        // TODO: Simpan Token (misalnya menggunakan shared_preferences)
-        // final String token = responseData['access_token'];
-
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -189,58 +155,92 @@ class _AuthScreenState extends State<AuthScreen> {
         final errorMessage =
             responseData['message'] ?? 'Terjadi kesalahan pada backend.';
         _showSnackBar('Gagal: $errorMessage');
-        await _googleSignIn
-            .signOut(); // Sign out dari sesi google lokal jika backend gagal
+        await _googleSignIn.signOut();
       }
     } catch (error) {
       _showSnackBar('Terjadi kesalahan saat login dengan Google.');
       print('Google Sign-In Error: $error');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Warna utama sesuai desain: coklat gelap olive
+    const Color primaryColor = Color(0xFF5C5240);
+    const Color bgColor = Color(0xFFF5F0EA);
+    const Color textDark = Color(0xFF3B3025);
+    const Color textLight = Color(0xFF9E8E78);
+    const Color primaryLight = Color(0xFFD6C9B6);
+
     return Scaffold(
+      backgroundColor: bgColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // ── HEADER dengan wavy clipper ──
             ClipPath(
-              clipper: WavyClipper(),
+              clipper: _WavyBottomClipper(),
               child: Container(
-                height: 250,
+                height: 260,
                 width: double.infinity,
-                color: AppColors.primary,
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 40),
-                    Icon(Icons.location_on, color: AppColors.white, size: 40),
-                    SizedBox(height: 10),
-                    Text(
-                      'FindUs',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white,
+                color: primaryColor,
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      // Ikon lokasi: lingkaran luar + lingkaran dalam (seperti di gambar)
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: bgColor,
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: primaryColor, width: 4),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      const Text(
+                        'FindUs',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 30), // ruang untuk wave
+                    ],
+                  ),
                 ),
               ),
             ),
+
+            // ── KONTEN FORM ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 8),
+
+                  // Toggle Log In / Sign Up
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withOpacity(0.4),
+                      color: primaryLight.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Row(
@@ -248,10 +248,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () => setState(() => isLogin = true),
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               decoration: BoxDecoration(
                                 color: isLogin
-                                    ? AppColors.primary
+                                    ? primaryColor
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(25),
                               ),
@@ -260,9 +261,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 'Log In',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: isLogin
-                                      ? AppColors.white
-                                      : AppColors.textLight,
+                                  color: isLogin ? Colors.white : textLight,
                                 ),
                               ),
                             ),
@@ -271,10 +270,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () => setState(() => isLogin = false),
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               decoration: BoxDecoration(
                                 color: !isLogin
-                                    ? AppColors.primary
+                                    ? primaryColor
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(25),
                               ),
@@ -283,9 +283,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 'Sign Up',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: !isLogin
-                                      ? AppColors.white
-                                      : AppColors.textLight,
+                                  color: !isLogin ? Colors.white : textLight,
                                 ),
                               ),
                             ),
@@ -294,21 +292,23 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 24),
 
+                  // ── SIGN UP FIELDS ──
                   if (!isLogin) ...[
                     const Text(
                       'Create account',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
+                        color: textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Join Circlee and start connecting.',
-                      style: TextStyle(color: AppColors.textLight),
+                      style: TextStyle(color: textLight),
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
@@ -349,7 +349,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         onPressed: () {},
                         child: const Text(
                           'Forgot password?',
-                          style: TextStyle(color: AppColors.textLight),
+                          style: TextStyle(color: Color(0xFFB89D7A)),
                         ),
                       ),
                     ),
@@ -365,63 +365,78 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 10),
                     const Text(
                       'Use 8+ characters with a mix of letters, numbers & symbols.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textLight,
-                      ),
+                      style: TextStyle(fontSize: 12, color: textLight),
                     ),
                     const SizedBox(height: 20),
                   ],
 
-                  // Tombol Utama (Login / Sign Up Email)
+                  // Tombol utama
                   _isLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : CustomButton(
-                          text: isLogin ? 'Log In' : 'Create Account',
-                          onPressed: _submitAuth, // Memicu fungsi integrasi API
+                      : SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: _submitAuth,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: Text(
+                              isLogin ? 'Log In' : 'Create Account',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
+
                   const SizedBox(height: 24),
 
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppColors.primaryLight)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10.0),
+                      Expanded(child: Divider(color: primaryLight)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         child: Text(
-                          'or',
-                          style: TextStyle(color: AppColors.textLight),
+                          isLogin ? 'or' : 'or continue with',
+                          style: const TextStyle(color: textLight),
                         ),
                       ),
-                      Expanded(child: Divider(color: AppColors.primaryLight)),
+                      Expanded(child: Divider(color: primaryLight)),
                     ],
                   ),
+
                   const SizedBox(height: 24),
 
-                  // Opsi Login Provider Pihak Ketiga
+                  // Social login buttons
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          // Tambahkan fungsi Google SignIn di sini
                           onPressed: _isLoading ? null : _handleGoogleSignIn,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(
-                              color: AppColors.primaryLight,
-                            ),
+                            side: const BorderSide(color: primaryLight),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            backgroundColor: Colors.white,
                           ),
                           icon: const Icon(
                             Icons.g_mobiledata,
-                            color: AppColors.textDark,
+                            color: textDark,
                             size: 28,
                           ),
                           label: const Text(
                             'Google',
                             style: TextStyle(
-                              color: AppColors.textDark,
+                              color: textDark,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -433,22 +448,21 @@ class _AuthScreenState extends State<AuthScreen> {
                           onPressed: _isLoading ? null : () {},
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(
-                              color: AppColors.primaryLight,
-                            ),
+                            side: const BorderSide(color: primaryLight),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            backgroundColor: Colors.white,
                           ),
                           icon: const Icon(
                             Icons.apple,
-                            color: AppColors.textDark,
+                            color: textDark,
                             size: 28,
                           ),
                           label: const Text(
                             'Apple',
                             style: TextStyle(
-                              color: AppColors.textDark,
+                              color: textDark,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -456,6 +470,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 30),
 
                   Center(
@@ -464,15 +479,13 @@ class _AuthScreenState extends State<AuthScreen> {
                         text: isLogin
                             ? 'By signing up you agree to our '
                             : 'By creating an account you agree to our\n',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textLight,
-                        ),
+                        style: const TextStyle(fontSize: 12, color: textLight),
                         children: const [
                           TextSpan(
                             text: 'Terms of Service',
                             style: TextStyle(
                               decoration: TextDecoration.underline,
+                              color: textLight,
                             ),
                           ),
                           TextSpan(text: ' & '),
@@ -480,6 +493,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             text: 'Privacy Policy',
                             style: TextStyle(
                               decoration: TextDecoration.underline,
+                              color: textLight,
                             ),
                           ),
                         ],
@@ -487,18 +501,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
+
                   if (!isLogin) ...[
                     const SizedBox(height: 16),
                     Center(
                       child: Text.rich(
                         TextSpan(
                           text: 'Already have an account? ',
-                          style: const TextStyle(color: AppColors.textLight),
+                          style: const TextStyle(color: textLight),
                           children: [
                             TextSpan(
                               text: 'Log In',
                               style: const TextStyle(
-                                color: AppColors.textDark,
+                                color: textDark,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -507,6 +522,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ],
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -516,4 +532,39 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
     );
   }
+}
+
+/// Wavy clipper — persis seperti gambar referensi:
+/// sisi kiri turun rendah, lalu naik membentuk bukit di tengah-kanan,
+/// kemudian turun sedikit di ujung kanan.
+class _WavyBottomClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+
+    // Start dari kiri atas
+    path.lineTo(0, 0);
+
+    // Turun ke kiri bawah (lebih dalam)
+    path.lineTo(0, size.height - 70);
+
+    // SATU gelombang panjang (ini kuncinya)
+    path.cubicTo(
+      size.width * 0.30,
+      size.height + 10, // control 1 (dorong ke bawah dulu)
+      size.width * 0.65,
+      size.height - 90, // control 2 (angkat halus, puncak lebar)
+      size.width,
+      size.height - 55, // end (kanan)
+    );
+
+    // Tutup ke kanan atas
+    path.lineTo(size.width, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
