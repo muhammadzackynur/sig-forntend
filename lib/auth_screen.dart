@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'home_screen.dart';
 import 'app_colors.dart';
 import 'custom_widgets.dart';
 
@@ -12,11 +15,114 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late bool isLogin;
+  bool _isLoading = false;
+
+  // Controller untuk menangkap input dari text field
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  // URL API Backend Laravel. Gunakan 10.0.2.2 untuk Android Emulator
+  final String _baseUrl = 'http://192.168.1.236:8000/api';
 
   @override
   void initState() {
     super.initState();
     isLogin = widget.isLoginMode;
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan memory saat screen ditutup
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi untuk menampilkan pesan (Snackbar)
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // Fungsi utama untuk integrasi ke backend
+  Future<void> _submitAuth() async {
+    // Validasi dasar
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      _showSnackBar('Email dan Password harus diisi!');
+      return;
+    }
+
+    if (!isLogin) {
+      if (_nameController.text.isEmpty) {
+        _showSnackBar('Nama lengkap harus diisi!');
+        return;
+      }
+      if (_passwordController.text != _confirmPasswordController.text) {
+        _showSnackBar('Konfirmasi password tidak cocok!');
+        return;
+      }
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final url = Uri.parse(isLogin ? '$_baseUrl/login' : '$_baseUrl/register');
+
+    try {
+      // Data yang akan dikirim ke Laravel
+      final Map<String, String> requestBody = {
+        'email': _emailController.text,
+        'password': _passwordController.text,
+      };
+
+      if (!isLogin) {
+        requestBody['name'] = _nameController.text;
+        // Jika backend kamu membutuhkan phone_number, kamu bisa mengirimkannya
+        // requestBody['phone'] = _phoneController.text;
+      }
+
+      final response = await http.post(
+        url,
+        headers: {'Accept': 'application/json'},
+        body: requestBody,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSnackBar(isLogin ? 'Login Berhasil!' : 'Pendaftaran Berhasil!');
+        print('Data Response: $responseData');
+
+        // TODO: Simpan Token (misalnya menggunakan shared_preferences)
+
+        // Navigasi ke halaman utama aplikasi (Home Screen)
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } else {
+        final errorMessage = responseData['message'] ?? 'Terjadi kesalahan.';
+        _showSnackBar('Gagal: $errorMessage');
+      }
+    } catch (e) {
+      _showSnackBar('Terjadi kesalahan koneksi jaringan.');
+      print('Network Error: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -128,28 +234,32 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: TextStyle(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 20),
-                    const CustomTextField(
+                    CustomTextField(
+                      controller: _nameController,
                       hint: 'Full Name',
                       icon: Icons.person_outline,
                     ),
                     const SizedBox(height: 16),
                   ],
 
-                  const CustomTextField(
+                  CustomTextField(
+                    controller: _emailController,
                     hint: 'Email address',
                     icon: Icons.email_outlined,
                   ),
                   const SizedBox(height: 16),
 
                   if (!isLogin) ...[
-                    const CustomTextField(
+                    CustomTextField(
+                      controller: _phoneController,
                       hint: 'Phone Number',
                       icon: Icons.phone_outlined,
                     ),
                     const SizedBox(height: 16),
                   ],
 
-                  const CustomTextField(
+                  CustomTextField(
+                    controller: _passwordController,
                     hint: 'Password',
                     icon: Icons.lock_outline,
                     isPassword: true,
@@ -169,7 +279,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 10),
                   ] else ...[
                     const SizedBox(height: 16),
-                    const CustomTextField(
+                    CustomTextField(
+                      controller: _confirmPasswordController,
                       hint: 'Confirm Password',
                       icon: Icons.lock_outline,
                       isPassword: true,
@@ -185,10 +296,13 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  CustomButton(
-                    text: isLogin ? 'Log In' : 'Create Account',
-                    onPressed: () {},
-                  ),
+                  // Tombol dengan indikator loading
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : CustomButton(
+                          text: isLogin ? 'Log In' : 'Create Account',
+                          onPressed: _submitAuth, // Memicu fungsi integrasi API
+                        ),
                   const SizedBox(height: 24),
 
                   Row(
@@ -301,10 +415,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         TextSpan(
                           text: 'Already have an account? ',
                           style: const TextStyle(color: AppColors.textLight),
-                          children: const [
+                          children: [
                             TextSpan(
                               text: 'Log In',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.textDark,
                                 fontWeight: FontWeight.bold,
                               ),

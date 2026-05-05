@@ -6,12 +6,14 @@ class CustomTextField extends StatefulWidget {
   final String hint;
   final IconData icon;
   final bool isPassword;
+  final TextEditingController? controller; // Tambahan: Menerima controller
 
   const CustomTextField({
     Key? key,
     required this.hint,
     required this.icon,
     this.isPassword = false,
+    this.controller, // Tambahan: inisialisasi controller
   }) : super(key: key);
 
   @override
@@ -24,6 +26,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      controller:
+          widget.controller, // Tambahan: Memasang controller ke TextFormField
       obscureText: widget.isPassword ? _obscureText : false,
       decoration: InputDecoration(
         hintText: widget.hint,
