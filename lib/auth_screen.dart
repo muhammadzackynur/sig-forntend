@@ -56,113 +56,21 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _submitAuth() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackBar('Email dan Password harus diisi!');
-      return;
-    }
-
-    if (!isLogin) {
-      if (_nameController.text.isEmpty) {
-        _showSnackBar('Nama lengkap harus diisi!');
-        return;
-      }
-      if (_passwordController.text != _confirmPasswordController.text) {
-        _showSnackBar('Konfirmasi password tidak cocok!');
-        return;
-      }
-    }
-
-    setState(() => _isLoading = true);
-
-    final url = Uri.parse(isLogin ? '$_baseUrl/login' : '$_baseUrl/register');
-
-    try {
-      final Map<String, String> requestBody = {
-        'email': _emailController.text,
-        'password': _passwordController.text,
-      };
-
-      if (!isLogin) {
-        requestBody['name'] = _nameController.text;
-        requestBody['phone_number'] = _phoneController.text;
-      }
-
-      final response = await http.post(
-        url,
-        headers: {'Accept': 'application/json'},
-        body: requestBody,
-      );
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _showSnackBar(isLogin ? 'Login Berhasil!' : 'Pendaftaran Berhasil!');
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        }
-      } else {
-        final errorMessage = responseData['message'] ?? 'Terjadi kesalahan.';
-        _showSnackBar('Gagal: $errorMessage');
-      }
-    } catch (e) {
-      _showSnackBar('Terjadi kesalahan koneksi jaringan.');
-      print('Network Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    // LOGIN STATIS: Melewati semua validasi data dan HTTP Request.
+    // Langsung arahkan ke HomeScreen.
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-
-      final Map<String, String> requestBody = {'id_token': idToken ?? ''};
-      if (!isLogin && _phoneController.text.isNotEmpty) {
-        requestBody['phone_number'] = _phoneController.text;
-      }
-
-      final url = Uri.parse('$_baseUrl/auth/google');
-      final response = await http.post(
-        url,
-        headers: {'Accept': 'application/json'},
-        body: requestBody,
-      );
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        _showSnackBar('Login Google Berhasil!');
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        }
-      } else {
-        final errorMessage =
-            responseData['message'] ?? 'Terjadi kesalahan pada backend.';
-        _showSnackBar('Gagal: $errorMessage');
-        await _googleSignIn.signOut();
-      }
-    } catch (error) {
-      _showSnackBar('Terjadi kesalahan saat login dengan Google.');
-      print('Google Sign-In Error: $error');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    // LOGIN STATIS GOOGLE: Melewati HTTP request ke backend.
+    // Langsung arahkan ke HomeScreen.
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   @override
@@ -196,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       Container(
                         width: 56,
                         height: 56,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: bgColor,
                         ),
@@ -400,7 +308,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   Row(
                     children: [
-                      Expanded(child: Divider(color: primaryLight)),
+                      const Expanded(child: Divider(color: primaryLight)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         child: Text(
@@ -408,7 +316,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           style: const TextStyle(color: textLight),
                         ),
                       ),
-                      Expanded(child: Divider(color: primaryLight)),
+                      const Expanded(child: Divider(color: primaryLight)),
                     ],
                   ),
 
@@ -509,10 +417,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         TextSpan(
                           text: 'Already have an account? ',
                           style: const TextStyle(color: textLight),
-                          children: [
+                          children: const [
                             TextSpan(
                               text: 'Log In',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textDark,
                                 fontWeight: FontWeight.bold,
                               ),
