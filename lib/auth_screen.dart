@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:google_sign_in/google_sign_in.dart'; // Tambahkan import Google Sign In
 import 'home_screen.dart';
 import 'app_colors.dart';
 import 'custom_widgets.dart';
@@ -25,7 +26,12 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  // URL API Backend Laravel. Gunakan 10.0.2.2 untuk Android Emulator
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    serverClientId:
+        '229118112939-419kmv6oeek5hicmrcpjvr135nh33tu6.apps.googleusercontent.com',
+  );
+  // URL API Backend Laravel
   final String _baseUrl = 'http://192.168.1.236:8000/api';
 
   @override
@@ -52,7 +58,7 @@ class _AuthScreenState extends State<AuthScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  // Fungsi utama untuk integrasi ke backend
+  // Fungsi utama untuk integrasi ke backend (Email & Password)
   Future<void> _submitAuth() async {
     // Validasi dasar
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -86,8 +92,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!isLogin) {
         requestBody['name'] = _nameController.text;
-        // Jika backend kamu membutuhkan phone_number, kamu bisa mengirimkannya
-        // requestBody['phone'] = _phoneController.text;
+        // Jika backend membutuhkan phone_number, kirimkan
+        requestBody['phone_number'] = _phoneController.text;
       }
 
       final response = await http.post(
@@ -118,6 +124,77 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       _showSnackBar('Terjadi kesalahan koneksi jaringan.');
       print('Network Error: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Fungsi integrasi Google Sign-In
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 1. Tampilkan pop-up Google Sign In
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User membatalkan proses login Google
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 2. Dapatkan token otentikasi
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      // Opsional: Jika ingin mengirim nomor telepon saat Sign Up via Google,
+      // kamu bisa mengambilnya dari _phoneController.text jika field tidak disembunyikan.
+      final Map<String, String> requestBody = {'id_token': idToken ?? ''};
+
+      // Jika butuh input nomor hp manual dari field saat google signup
+      if (!isLogin && _phoneController.text.isNotEmpty) {
+        requestBody['phone_number'] = _phoneController.text;
+      }
+
+      // 3. Kirim id_token ke backend Laravel
+      final url = Uri.parse('$_baseUrl/auth/google');
+      final response = await http.post(
+        url,
+        headers: {'Accept': 'application/json'},
+        body: requestBody,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        _showSnackBar('Login Google Berhasil!');
+        print('Data Response: $responseData');
+
+        // TODO: Simpan Token (misalnya menggunakan shared_preferences)
+        // final String token = responseData['access_token'];
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } else {
+        final errorMessage =
+            responseData['message'] ?? 'Terjadi kesalahan pada backend.';
+        _showSnackBar('Gagal: $errorMessage');
+        await _googleSignIn
+            .signOut(); // Sign out dari sesi google lokal jika backend gagal
+      }
+    } catch (error) {
+      _showSnackBar('Terjadi kesalahan saat login dengan Google.');
+      print('Google Sign-In Error: $error');
     } finally {
       setState(() {
         _isLoading = false;
@@ -296,7 +373,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Tombol dengan indikator loading
+                  // Tombol Utama (Login / Sign Up Email)
                   _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : CustomButton(
@@ -320,11 +397,13 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Opsi Login Provider Pihak Ketiga
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          // Tambahkan fungsi Google SignIn di sini
+                          onPressed: _isLoading ? null : _handleGoogleSignIn,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(
@@ -351,7 +430,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: _isLoading ? null : () {},
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(
