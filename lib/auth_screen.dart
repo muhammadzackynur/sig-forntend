@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'home_screen.dart';
+
+// PASTIKAN BARIS INI ADA AGAR TIDAK ERROR
+import 'main_layout.dart';
 import 'app_colors.dart';
 import 'custom_widgets.dart';
 
@@ -57,19 +59,19 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _submitAuth() async {
     // LOGIN STATIS: Melewati semua validasi data dan HTTP Request.
-    // Langsung arahkan ke HomeScreen.
+    // Langsung arahkan ke MainLayout.
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(builder: (context) => const MainLayout()),
     );
   }
 
   Future<void> _handleGoogleSignIn() async {
     // LOGIN STATIS GOOGLE: Melewati HTTP request ke backend.
-    // Langsung arahkan ke HomeScreen.
+    // Langsung arahkan ke MainLayout.
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(builder: (context) => const MainLayout()),
     );
   }
 
@@ -100,7 +102,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 20),
-                      // Ikon lokasi: lingkaran luar + lingkaran dalam (seperti di gambar)
+                      // Ikon lokasi: lingkaran luar + lingkaran dalam
                       Container(
                         width: 56,
                         height: 56,
@@ -129,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 30), // ruang untuk wave
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -442,34 +444,23 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-/// Wavy clipper — persis seperti gambar referensi:
-/// sisi kiri turun rendah, lalu naik membentuk bukit di tengah-kanan,
-/// kemudian turun sedikit di ujung kanan.
+/// Wavy clipper
 class _WavyBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-
-    // Start dari kiri atas
     path.lineTo(0, 0);
-
-    // Turun ke kiri bawah (lebih dalam)
     path.lineTo(0, size.height - 70);
-
-    // SATU gelombang panjang (ini kuncinya)
     path.cubicTo(
       size.width * 0.30,
-      size.height + 10, // control 1 (dorong ke bawah dulu)
+      size.height + 10,
       size.width * 0.65,
-      size.height - 90, // control 2 (angkat halus, puncak lebar)
+      size.height - 90,
       size.width,
-      size.height - 55, // end (kanan)
+      size.height - 55,
     );
-
-    // Tutup ke kanan atas
     path.lineTo(size.width, 0);
     path.close();
-
     return path;
   }
 

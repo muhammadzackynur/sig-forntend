@@ -10,15 +10,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Warna kustom berdasarkan desain gambar
   final Color darkBrown = const Color(0xFF5B4D41);
   final Color lightCream = const Color(0xFFF7F2EB);
   final Color cardCream = const Color(0xFFEBE3D6);
   final Color greenDot = const Color(0xFF4CAF50);
 
-  // Lokasi dummy (Jakarta sebagai contoh)
   final LatLng myLocation = const LatLng(-6.2088, 106.8456);
-  final LatLng sisLocation = const LatLng(-6.1944, 106.8229); // Grand Indonesia
+  final LatLng sisLocation = const LatLng(-6.1944, 106.8229);
 
   late final MapController _mapController;
 
@@ -31,9 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // NAVBAR DIHAPUS DARI SINI
       body: Stack(
         children: [
-          // 1. REAL MAP dengan flutter_map + OpenStreetMap
           Positioned.fill(
             child: FlutterMap(
               mapController: _mapController,
@@ -45,17 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               children: [
-                // Tile layer dari OpenStreetMap (gratis, tanpa API key)
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.circlee',
                   maxZoom: 19,
                 ),
-
-                // Marker Layer
                 MarkerLayer(
                   markers: [
-                    // Marker "You"
                     Marker(
                       point: myLocation,
                       width: 80,
@@ -66,8 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         true,
                       ),
                     ),
-
-                    // Marker "Sis"
                     Marker(
                       point: sisLocation,
                       width: 70,
@@ -83,51 +75,46 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
-          // 2. Top Notification Card
           Positioned(
             top: 50,
             left: 16,
             right: 16,
             child: _buildTopNotification(),
           ),
-
-          // 3. Family Dropdown Header
           Positioned(
             top: 140,
             left: 16,
             right: 16,
             child: _buildFamilyHeader(),
           ),
-
-          // 4. Tombol zoom di kanan bawah sebelum bottom panel
           Positioned(
             bottom: 320,
             right: 16,
             child: Column(
               children: [
-                _buildMapButton(Icons.add, () {
-                  _mapController.move(
+                _buildMapButton(
+                  Icons.add,
+                  () => _mapController.move(
                     _mapController.camera.center,
                     _mapController.camera.zoom + 1,
-                  );
-                }),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                _buildMapButton(Icons.remove, () {
-                  _mapController.move(
+                _buildMapButton(
+                  Icons.remove,
+                  () => _mapController.move(
                     _mapController.camera.center,
                     _mapController.camera.zoom - 1,
-                  );
-                }),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                _buildMapButton(Icons.my_location, () {
-                  _mapController.move(myLocation, 14);
-                }),
+                _buildMapButton(
+                  Icons.my_location,
+                  () => _mapController.move(myLocation, 14),
+                ),
               ],
             ),
           ),
-
-          // 5. Bottom Panel
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -148,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Drag Handle
                   Container(
                     width: 40,
                     height: 4,
@@ -158,8 +144,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Header: Family Circle & Add Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -201,8 +185,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // Horizontal Member List
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -235,8 +217,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Recent Activity Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -277,10 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            // Fly to Sis location on map
-                            _mapController.move(sisLocation, 15);
-                          },
+                          onTap: () => _mapController.move(sisLocation, 15),
                           child: Text(
                             'View',
                             style: TextStyle(
@@ -293,8 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
@@ -353,29 +328,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-
-      // 6. Custom Bottom Navigation Bar
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        decoration: BoxDecoration(
-          color: darkBrown,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildNavItem(Icons.map, 'Home', true),
-            _buildNavItem(Icons.people_outline, '', false),
-            _buildNavItem(Icons.access_time, '', false),
-            _buildNavItem(Icons.notifications_none, '', false),
-            _buildNavItem(Icons.person_outline, '', false),
-          ],
-        ),
-      ),
     );
   }
-
-  // --- Widget Builders ---
 
   Widget _buildMapButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
@@ -597,30 +551,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? lightCream : lightCream.withOpacity(0.5),
-          size: 28,
-        ),
-        if (label.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: lightCream,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
       ],
     );
   }
